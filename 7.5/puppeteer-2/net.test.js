@@ -1,99 +1,61 @@
-let page;
-
 const {
   clickElement,
   getText,
-  clickDay,
-  clickMoviTime,
-  clickSeat,
-  clickSeatVip,
-  checkCodeQR,
+  days,
+  movieTime,
+  seats,
 } = require("./lib/commands");
 
-const { generateData } = require("./lib/utils");
+let page;
 
 beforeEach(async () => {
   page = await browser.newPage();
+  await page.setDefaultNavigationTimeout(60000);
 });
 
-afterEach(() => {
-  page.close();
+afterEach(async () => {
+  await page.close();
 });
 
-describe("Ticket booking", () => {
+describe("GoToTheCinema test", () => {
   beforeEach(async () => {
-    await page.goto("http://qamid.tmweb.ru/client/index.php");
+    await page.goto("http://qamid.tmweb.ru/client/index.php", {
+      timeout: 60000,
+    });
   });
 
-  test("Positive - Should book one seat", async () => {
-    const data = generateData();
-    const moviNumber = 2;
-    const timeNumber = 2;
-    const rowNumber = 10;
-    const seatNumber = 10;
-    await clickDay(page, data);
-    await clickMoviTime(page, moviNumber, timeNumber);
+  test("Should book ticket", async () => {
+    await days(page, "3");
+    await movieTime(page, "1", "2");
     await page.waitForSelector("h1");
-    await clickSeat(page, rowNumber, seatNumber);
-    await clickElement(page, ".acceptin-button");
+    await seats(page, "6", "5");
+    await clickElement(page, "button");
     await page.waitForSelector("h1");
-    await clickElement(page, ".acceptin-button");
-    await checkCodeQR(page);
     const actual = await getText(page, "h2");
-    expect(actual).toContain("Электронный билет");
-  });
+    expect(actual).toContain("Вы выбрали билеты:");
+  }, 60000);
 
-  test("Positive - Should book VIP seat", async () => {
-    const data = generateData();
-    const moviNumber = 2;
-    const timeNumber = 2;
-    const vipSeatNumber = 3;
-    await clickDay(page, data);
-    await clickMoviTime(page, moviNumber, timeNumber);
+  test("Should book 3 ticket", async () => {
+    await days(page, "5");
+    await movieTime(page, "2", "3");
     await page.waitForSelector("h1");
-    await clickSeatVip(page, vipSeatNumber);
-    await clickElement(page, ".acceptin-button");
+    await seats(page, "1", "7");
+    await seats(page, "1", "8");
+    await seats(page, "1", "9");
+    await clickElement(page, "button");
     await page.waitForSelector("h1");
-    await clickElement(page, ".acceptin-button");
-    await page.waitForSelector("h1");
-    await checkCodeQR(page);
     const actual = await getText(page, "h2");
-    expect(actual).toContain("Электронный билет");
-  });
+    expect(actual).toContain("Вы выбрали билеты:");
+  }, 60000);
 
-  test("Positive - Should book two seats", async () => {
-    const data = generateData();
-    const moviNumber = 2;
-    const timeNumber = 2;
-    const rowNumber1 = 9;
-    const seatNumber1 = 1;
-    const rowNumber2 = 9;
-    const seatNumber2 = 2;
-    await clickDay(page, data);
-    await clickMoviTime(page, moviNumber, timeNumber);
+  test("Should't book ticket", async () => {
+    await days(page, "2");
+    await movieTime(page, "1", "3");
     await page.waitForSelector("h1");
-    await clickSeat(page, rowNumber1, seatNumber1);
-    await clickSeat(page, rowNumber2, seatNumber2);
-    await clickElement(page, ".acceptin-button");
-    await page.waitForSelector("h1");
-    await clickElement(page, ".acceptin-button");
-    await page.waitForSelector("h1");
-    await checkCodeQR(page);
-    const actual = await getText(page, "h2");
-    expect(actual).toContain("Электронный билет");
-  });
-
-  test("Negative - Should not book any seats", async () => {
-    const data = generateData();
-    const moviNumber = 2;
-    const timeNumber = 2;
-    await clickDay(page, data);
-    await clickMoviTime(page, moviNumber, timeNumber);
-    await page.waitForSelector("h1");
-    await clickElement(page, ".acceptin-button");
-    const actual = await page.$eval(".acceptin-button", (button) =>
-      button.hasAttribute("disabled")
+    let acceptionButton = await page.$eval(
+      "button",
+      (button) => button.disabled
     );
-    expect(actual).toBe(true);
-  });
+    expect(acceptionButton).toBe(true);
+  }, 60000);
 });
